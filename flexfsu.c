@@ -9,11 +9,9 @@ struct flexdisc *ffu_open(const char *fn)
     if (fp) {
         struct flexdisc *disc = malloc(sizeof(struct flexdisc));
         if (disc) {
-            if (fseek(fp, 2 * FLEX_SECT_SIZE, SEEK_SET) == 0) {
-                if (fread(disc->fdi_sect, FLEX_SECT_SIZE, 1, fp) == 1) {
+            if (fseek(fp, 2 * FLEX_SECT_SIZE + 16, SEEK_SET) == 0) {
+                if (fread(disc->fdi_sir, sizeof disc->fdi_sir, 1, fp) == 1) {
                     disc->fdi_fp = fp;
-                    disc->fdi_max_track  = disc->fdi_sect[0x26];
-                    disc->fdi_max_sector = disc->fdi_sect[0x27];
                     return disc;
                 }
             }
@@ -32,11 +30,13 @@ void ffu_close(struct flexdisc *disc)
 
 const unsigned char *ffu_read_sect(struct flexdisc *disc, int track, int sector)
 {
-    if (track > disc->fdi_max_track || sector > disc->fdi_max_sector) {
+    unsigned max_track  = disc->fdi_sir[22];
+    unsigned max_sector = disc->fdi_sir[23];
+    if (track > max_track || sector > max_sector) {
         errno = EINVAL;
         return NULL;
     }
-    if (fseek(disc->fdi_fp, (track * disc->fdi_max_sector + sector - 1) * FLEX_SECT_SIZE, SEEK_SET))
+    if (fseek(disc->fdi_fp, (track * max_sector + sector - 1) * FLEX_SECT_SIZE, SEEK_SET))
         return NULL;
     if (fread(disc->fdi_sect, FLEX_SECT_SIZE, 1, disc->fdi_fp) != 1)
         return NULL;

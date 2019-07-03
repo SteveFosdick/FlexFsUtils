@@ -8,11 +8,11 @@ int main(int argc, char **argv)
         const char *fn = argv[1];
         struct flexdisc *disc = ffu_open(fn);
         if (disc) {
-            printf("Volume %.10s number %d created %02d/%02d/%04d\n",
-                   disc->fdi_sect+16, (disc->fdi_sect[27] << 8) | disc->fdi_sect[28],
-                   disc->fdi_sect[36], disc->fdi_sect[35], disc->fdi_sect[37] + 1900);
-            unsigned freesect = (disc->fdi_sect[33] << 8) | disc->fdi_sect[34];
+            unsigned freesect = (disc->fdi_sir[17] << 8) | disc->fdi_sir[18];
             const unsigned char *di = ffu_dir_first(disc);
+            printf("Volume %.10s number %d created %02d/%02d/%04d\n",
+                   disc->fdi_sir, (disc->fdi_sir[11] << 8) | disc->fdi_sir[12],
+                   disc->fdi_sir[20], disc->fdi_sir[19], disc->fdi_sir[21] + 1900);
             status = 0;
             while (di) {
                 unsigned attr = di[11];

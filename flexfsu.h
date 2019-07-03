@@ -9,8 +9,7 @@
 struct flexdisc {
     FILE *fdi_fp;
     const unsigned char *fdi_dirptr;
-    unsigned fdi_max_track;
-    unsigned fdi_max_sector;
+    unsigned char fdi_sir[24];
     unsigned char fdi_sect[FLEX_SECT_SIZE];
 };
 
