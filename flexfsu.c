@@ -51,13 +51,20 @@ bool ffu_parse_fn(const char *fn, unsigned char *buf)
         return false;
     ptr = buf;
     end = ptr + 8;
-    while (fn < ext && ptr < end)
-        *ptr++ = *fn++ & 0xdf;
+    while (fn < ext && ptr < end) {
+        char ch = *fn++;
+        if (ch >= 'a' && ch <= 'z')
+            ch &= 0x5f;
+        *ptr++ = ch;
+    }
     while (ptr < end)
         *ptr++ = 0;
     end += 3;
-    while ((ch = *++ext) && ptr < end)
-        *ptr++ = ch  & 0xdf;
+    while ((ch = *++ext) && ptr < end) {
+        if (ch >= 'a' && ch <= 'z')
+            ch &= 0x5f;
+        *ptr++ = ch;
+    }
     while (ptr < end)
         *ptr++ = 0;
     return true;
