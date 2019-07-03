@@ -43,53 +43,13 @@ const unsigned char *ffu_read_sect(struct flexdisc *disc, int track, int sector)
     return disc->fdi_sect;
 }
 
-static const unsigned char *next_dir_ent(struct flexdisc *disc, const unsigned char *dirptr)
+bool ffu_parse_fn(const char *fn, char *buf)
 {
-    const unsigned char *sect;
-    unsigned n;
-
-    do {
-        dirptr += 24;
-        if (dirptr >= disc->fdi_sect + FLEX_SECT_SIZE) {
-            int track = disc->fdi_sect[0];
-            int sector = disc->fdi_sect[1];
-            if (track == 0 && sector == 0)
-                return NULL;
-            sect = ffu_read_sect(disc, track, sector);
-            if (!sect)
-                return NULL;
-            dirptr = sect + 16;
-        }
-        n = *dirptr;
-    }
-    while (!n || (n & 0x80));
-    disc->fdi_dirptr = dirptr;
-    return dirptr;
-}
-
-const unsigned char *ffu_dir_first(struct flexdisc *disc)
-{
-    if (fseek(disc->fdi_fp, 4 * FLEX_SECT_SIZE, SEEK_SET))
-        return NULL;
-    if (fread(disc->fdi_sect, FLEX_SECT_SIZE, 1, disc->fdi_fp) != 1)
-        return NULL;
-    return next_dir_ent(disc, disc->fdi_sect + 16 - 24);
-}
-
-const unsigned char *ffu_dir_next(struct flexdisc *disc)
-{
-    return next_dir_ent(disc, disc->fdi_dirptr);
-}
-
-const unsigned char *ffu_find_file(struct flexdisc *disc, const char *fn)
-{
-    char ch, *ptr, *end, pat[11];
-    const unsigned char *dirptr;
-
+    char ch, *ptr, *end;
     const char *ext = strchr(fn, '.');
     if (!ext || (ext - fn) > 8 || strlen(ext) > 4)
-        return 0;
-    ptr = pat;
+        return false;
+    ptr = buf;
     end = ptr + 8;
     while (fn < ext && ptr < end)
         *ptr++ = *fn++ & 0xdf;
@@ -100,12 +60,5 @@ const unsigned char *ffu_find_file(struct flexdisc *disc, const char *fn)
         *ptr++ = ch  & 0xdf;
     while (ptr < end)
         *ptr++ = 0;
-
-    dirptr = ffu_dir_first(disc);
-    while (dirptr) {
-        if (memcmp(dirptr, pat, 11) == 0)
-            return dirptr;
-        dirptr = next_dir_ent(disc, disc->fdi_dirptr);
-    }
-    return NULL;
+    return true;
 }

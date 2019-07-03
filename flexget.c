@@ -40,34 +40,59 @@ static int text_content(const unsigned char *data, FILE *ofp, int tab)
 static int extract_file(struct flexdisc *disc, const char *fn, const char *mode, int (*callback)(const unsigned char *data, FILE *ofp, int flag))
 {
     int status;
-    const unsigned char *di = ffu_find_file(disc, fn);
-    if (di) {
-        FILE *ofp = fopen(fn, mode);
-        if (ofp) {
-            int flag = 0;
-            unsigned track = di[13];
-            unsigned sector = di[14];
-            while (track && sector) {
-                const unsigned char *data = ffu_read_sect(disc, track, sector);
-                if (!data) {
-                    fprintf(stderr, "flexget: error reading sector %d:%d of %s: %s\n", track, sector, fn, strerror(errno));
-                    status = 5;
-                    break;
-                }
-                flag = callback(data+4, ofp, flag);
-                track  = data[0];
-                sector = data[1];
+    char pat[FLEX_NAME_SIZE];
+
+    if (ffu_parse_fn(fn, pat)) {
+        int track = 0;
+        int sector = 5;
+        do {
+            const unsigned char *sect = ffu_read_sect(disc, track, sector);
+            if (!sect) {
+                fprintf(stderr, "flexget: error reading sector %d:%d: %s\n", track, sector, strerror(errno));
+                status = 3;
+                break;
             }
-            fclose(ofp);
-            status = 0;
+            const unsigned char *ptr = sect+16;
+            const unsigned char *end = sect+FLEX_SECT_SIZE;
+            while (ptr < end) {
+                unsigned n = *ptr;
+                if (n && !(n & 0x80) && memcmp(ptr, pat, FLEX_NAME_SIZE) == 0) {
+                    FILE *ofp = fopen(fn, mode);
+                    if (ofp) {
+                        int flag = 0;
+                        unsigned track = ptr[13];
+                        unsigned sector = ptr[14];
+                        while (track && sector) {
+                            const unsigned char *data = ffu_read_sect(disc, track, sector);
+                            if (!data) {
+                                fprintf(stderr, "flexget: error reading sector %d:%d of %s: %s\n", track, sector, fn, strerror(errno));
+                                status = 5;
+                                break;
+                            }
+                            flag = callback(data+4, ofp, flag);
+                            track  = data[0];
+                            sector = data[1];
+                        }
+                        fclose(ofp);
+                        status = 0;
+                    }
+                    else {
+                        fprintf(stderr, "flexget: unable to open %s for writing: %s\n", fn, strerror(errno));
+                        status = 4;
+                    }
+                    return status;
+                }
+                ptr += 24;
+            }
+            track = sect[0];
+            sector = sect[1];
         }
-        else {
-            fprintf(stderr, "flexget: unable to open %s for writing: %s\n", fn, strerror(errno));
-            status = 4;
-        }
+        while (track || sector);
+        fprintf(stderr, "flexget: file %s not found on flex disc\n", fn);
+        status = 3;
     }
     else {
-        fprintf(stderr, "flexget: file %s not found on flex disc\n", fn);
+        fprintf(stderr, "flexget: illegal filename %s\n", fn);
         status = 3;
     }
     return status;
