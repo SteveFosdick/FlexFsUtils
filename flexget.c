@@ -40,7 +40,7 @@ static int text_content(const unsigned char *data, FILE *ofp, int tab)
 static int extract_file(struct flexdisc *disc, const char *fn, const char *mode, int (*callback)(const unsigned char *data, FILE *ofp, int flag))
 {
     int status;
-    char pat[FLEX_NAME_SIZE];
+    unsigned char pat[FLEX_NAME_SIZE];
 
     if (ffu_parse_fn(fn, pat)) {
         int track = 0;

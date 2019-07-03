@@ -17,6 +17,6 @@ struct flexdisc {
 struct flexdisc *ffu_open(const char *fn);
 void ffu_close(struct flexdisc *disc);
 const unsigned char *ffu_read_sect(struct flexdisc *disc, int track, int sector);
-bool ffu_parse_fn(const char *fn, char *buf);
+bool ffu_parse_fn(const char *fn, unsigned char *buf);
 
 #endif

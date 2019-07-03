@@ -43,9 +43,9 @@ const unsigned char *ffu_read_sect(struct flexdisc *disc, int track, int sector)
     return disc->fdi_sect;
 }
 
-bool ffu_parse_fn(const char *fn, char *buf)
+bool ffu_parse_fn(const char *fn, unsigned char *buf)
 {
-    char ch, *ptr, *end;
+    unsigned char ch, *ptr, *end;
     const char *ext = strchr(fn, '.');
     if (!ext || (ext - fn) > 8 || strlen(ext) > 4)
         return false;
